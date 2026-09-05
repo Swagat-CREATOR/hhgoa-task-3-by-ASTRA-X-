@@ -8,6 +8,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(ROOT, "out")
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) task3-demo/1.0"

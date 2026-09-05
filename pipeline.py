@@ -9,6 +9,9 @@ import search_post
 import upload_hash
 import chain
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) task3-demo/1.0"
 
 def banner(step, text):
