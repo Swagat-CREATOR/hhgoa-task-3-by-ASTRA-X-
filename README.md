@@ -14,8 +14,8 @@ face image  ──▶  detect + encode face   (OpenCV YuNet + SFace, 128-d embed
 ## What each stage does
 
 1. **Face identification** — `face_encode.py` detects the largest face with OpenCV **YuNet** and encodes it to a 128-dimension embedding with **SFace**. Models auto-download on first run.
-2. **Web / social search** — `search_post.py` hosts the query image on a temporary public host, runs a **genuine reverse image search** (SerpAPI Google Lens; keyless Yandex fallback), and picks a matching post, preferring social domains (Instagram, X, Facebook, LinkedIn, TikTok, YouTube, …).
-3. **Identity confirmation** — the matched image is re-encoded and compared to the input embedding via SFace cosine similarity, so a hit is a *face* match, not just a lookalike thumbnail.
+2. **Web / social search** — `search_post.py` hosts the query image on a temporary public host, then runs a **genuine reverse image search across both engines at once** (SerpAPI Google Lens **and** keyless Yandex), merges and dedupes the hits, and picks a matching post **ranked by social platform priority** (Instagram → Facebook → X → LinkedIn → TikTok → YouTube → …). Keeping the top 40 matches means social posts that rank below stock-photo sites still survive to the pick.
+3. **Identity confirmation** — the matched image is re-encoded and compared to the input embedding via SFace cosine similarity, so a hit is a *face* match, not just a lookalike thumbnail. It walks every candidate image (chosen post first, then the rest of the matches) until one is directly fetchable, so the match still confirms even when the top pick sits behind a crawler-only host.
 4. **Blockchain verification** — `upload_hash.py` builds a canonical record of the post, hashes it with SHA-256, and writes the hash to chain via `chain.py`. `verify_hash.py` reads the record back off-chain and re-hashes to prove it is unchanged. `--tamper` demonstrates detection of any modification.
 
 ## Blockchain used
