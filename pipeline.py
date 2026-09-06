@@ -19,23 +19,40 @@ def banner(step, text):
     print("STEP " + str(step) + "  " + text)
     print("=" * 62)
 
-def confirm_match(input_feat, image_url):
-    if not image_url:
+def _score_url(input_feat, url, detector, recognizer):
+    data = requests.get(url, headers={"User-Agent": UA}, timeout=30).content
+    img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
+    if img is None:
         return None
-    try:
-        data = requests.get(image_url, headers={"User-Agent": UA}, timeout=30).content
-        img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
-        if img is None:
-            return None
-        detector, recognizer = face_encode.build()
-        faces = face_encode.detect_faces(detector, img)
-        if not faces:
-            return None
-        feat, _ = face_encode.encode(recognizer, img, face_encode.largest_face(faces))
-        return face_encode.similarity(recognizer, input_feat, feat)
-    except Exception as e:
-        print("Face-match check skipped:", e)
+    faces = face_encode.detect_faces(detector, img)
+    if not faces:
         return None
+    feat, _ = face_encode.encode(recognizer, img, face_encode.largest_face(faces))
+    return face_encode.similarity(recognizer, input_feat, feat)
+
+def confirm_match(input_feat, post):
+    chosen = post.get("chosen") or {}
+    candidates = []
+    for key in ("image", "thumbnail"):
+        if chosen.get(key):
+            candidates.append((chosen.get("source"), chosen.get(key)))
+    for m in post.get("matches", []):
+        for key in ("image", "thumbnail"):
+            if m.get(key):
+                candidates.append((m.get("source"), m.get(key)))
+    detector, recognizer = face_encode.build()
+    seen = set()
+    for src, url in candidates:
+        if url in seen:
+            continue
+        seen.add(url)
+        try:
+            sim = _score_url(input_feat, url, detector, recognizer)
+        except Exception:
+            sim = None
+        if sim is not None:
+            return sim, src
+    return None, None
 
 def main():
     path = sys.argv[1] if len(sys.argv) > 1 else os.path.join("faces", "sample.jpg")
@@ -55,10 +72,13 @@ def main():
     print("Post link: ", chosen.get("link"))
     print("Source:    ", chosen.get("source"))
 
-    sim = confirm_match(fr["embedding"], chosen.get("image"))
+    sim, matched_src = confirm_match(fr["embedding"], post)
     if sim is not None:
         verdict = "SAME PERSON" if sim >= 0.363 else "different / uncertain"
+        print("Face-match confirmed on:", matched_src)
         print("Face-match vs input (cosine):", round(sim, 4), "->", verdict)
+    else:
+        print("Face-match check skipped: no candidate image was directly fetchable.")
 
     banner(3, "BLOCKCHAIN UPLOAD  (memo)")
     receipt = upload_hash.upload(chosen)

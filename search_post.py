@@ -103,27 +103,45 @@ def search_yandex(image_url):
         results.append({"title": title, "link": link, "source": host, "image": image, "thumbnail": image})
     return results
 
+def social_rank(r):
+    blob = ((r.get("link") or "") + " " + (r.get("source") or "")).lower()
+    for i, s in enumerate(SOCIAL):
+        if s in blob:
+            return i
+    return len(SOCIAL)
+
 def choose(results):
     if not results:
         return None
-    social = [r for r in results if is_social(r.get("link")) or is_social(r.get("source"))]
-    return social[0] if social else results[0]
+    ranked = sorted(range(len(results)), key=lambda i: (social_rank(results[i]), i))
+    return results[ranked[0]]
+
+def merge(*groups):
+    out, seen = [], set()
+    for group in groups:
+        for r in group:
+            link = r.get("link") or ""
+            if link and link not in seen:
+                seen.add(link)
+                out.append(r)
+    return out
 
 def run(image_path):
     key = os.getenv("SERPAPI_KEY", "").strip()
     image_url = upload_image(image_path)
-    engine = "serpapi" if key else "yandex"
-    print("Search engine:", engine)
-    results = search_serpapi(image_url, key) if key else search_yandex(image_url)
-    if not results and key:
-        print("SerpAPI found nothing; falling back to Yandex.")
-        engine = "yandex"
-        results = search_yandex(image_url)
+    serp = search_serpapi(image_url, key) if key else []
+    yand = search_yandex(image_url)
+    results = merge(serp, yand)
+    engine = "+".join([e for e, g in [("serpapi", serp), ("yandex", yand)] if g]) or "none"
+    print("Search engines:", engine, "| serpapi:", len(serp), "| yandex:", len(yand))
+    socials = [r for r in results if social_rank(r) < len(SOCIAL)]
+    print("Social matches:", len(socials))
     post = {
         "engine": engine,
         "query_image_url": image_url,
         "match_count": len(results),
-        "matches": results[:10],
+        "social_count": len(socials),
+        "matches": results[:40],
         "chosen": choose(results),
     }
     os.makedirs(OUT_DIR, exist_ok=True)
