@@ -75,18 +75,31 @@ def _solana_submit(text):
     if bal < 5000:
         raise SystemExit("Wallet unfunded. Fund " + str(payer.pubkey()) + " at https://faucet.solana.com, or run with CHAIN=local.")
     ix = Instruction(Pubkey.from_string(MEMO_PROGRAM), text.encode(), [])
-    bh = Hash.from_string(_rpc("getLatestBlockhash", [{"commitment": "confirmed"}])["value"]["blockhash"])
-    msg = Message.new_with_blockhash([ix], payer.pubkey(), bh)
-    tx = Transaction([payer], msg, bh)
-    sig = _rpc("sendTransaction", [base64.b64encode(bytes(tx)).decode(), {"encoding": "base64"}])
-    _confirm(sig)
-    return {
-        "backend": "solana",
-        "network": CLUSTER,
-        "id": sig,
-        "wallet": str(payer.pubkey()),
-        "explorer": "https://explorer.solana.com/tx/" + sig + "?cluster=" + CLUSTER,
-    }
+    last_err = None
+    for attempt in range(1, 5):
+        bh = Hash.from_string(_rpc("getLatestBlockhash", [{"commitment": "finalized"}])["value"]["blockhash"])
+        msg = Message.new_with_blockhash([ix], payer.pubkey(), bh)
+        tx = Transaction([payer], msg, bh)
+        try:
+            sig = _rpc("sendTransaction", [base64.b64encode(bytes(tx)).decode(),
+                                           {"encoding": "base64", "preflightCommitment": "finalized"}])
+        except RuntimeError as e:
+            last_err = e
+            if "Blockhash" in str(e) and attempt < 4:
+                print("Blockhash expired, retrying with a fresh one (attempt " + str(attempt) + ")...")
+                time.sleep(1)
+                continue
+            raise
+        if _confirm(sig):
+            return {
+                "backend": "solana",
+                "network": CLUSTER,
+                "id": sig,
+                "wallet": str(payer.pubkey()),
+                "explorer": "https://explorer.solana.com/tx/" + sig + "?cluster=" + CLUSTER,
+            }
+        print("Transaction not confirmed in time, retrying (attempt " + str(attempt) + ")...")
+    raise SystemExit("Solana submit failed after retries: " + str(last_err))
 
 def _solana_read(record_id):
     tx = _rpc("getTransaction", [record_id, {"encoding": "json", "maxSupportedTransactionVersion": 0, "commitment": "confirmed"}])
