@@ -38,7 +38,7 @@ Three steps, one command. No smart contract to deploy. No private key to hand ov
 
 ## Watch the demo
 
-> Screen recording of the full CLI run (Step 1 search → Step 2 blockchain → Step 3 tamper check) goes here.
+> Screen recording of the full CLI run ----> https://youtu.be/KtlYOyhsokg
 
 ---
 
