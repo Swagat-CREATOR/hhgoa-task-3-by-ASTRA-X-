@@ -1,5 +1,5 @@
 opencv-python
 numpy
-requests
+
 solders
 python-dotenv
