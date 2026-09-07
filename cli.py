@@ -10,8 +10,19 @@ import pipeline
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
+os.system("")
+
+def paint(text, code):
+    return "\033[" + code + "m" + str(text) + "\033[0m"
+
+def link(url):
+    return "\033[4;94m" + str(url) + "\033[0m"
+
+def verdict(flag, good, bad):
+    return paint(good, "1;92") if flag else paint(bad, "1;91")
+
 def line(c="="):
-    print(c * 64)
+    print(paint(c * 64, "1;90"))
 
 def resolve_image(raw):
     s = raw.strip().strip('"').strip("'")
@@ -36,7 +47,7 @@ def ask_image():
 
 def step1(path):
     line()
-    print("STEP 1   REVERSE IMAGE SEARCH IN PROGRESS")
+    print(paint("STEP 1   REVERSE IMAGE SEARCH IN PROGRESS", "1;96"))
     line()
     fr = face_encode.encode_path(path)
     print("Face detected -> 128-d biometric embedding (detector score", round(fr["score"], 4), ")")
@@ -56,24 +67,25 @@ def step1(path):
             links = platforms[p]
             print("  * " + p + "  (" + str(len(links)) + " post" + ("s" if len(links) != 1 else "") + ")")
             for l in links[:3]:
-                print("        " + str(l))
+                print("        " + link(l))
     else:
         print("  (no social-media hits this run; a general web match was used)")
     print()
     print("Total matches:", post["match_count"], "| social matches:", post.get("social_count", 0))
     if sim is not None:
-        verdict = "SAME PERSON" if sim >= 0.363 else "uncertain"
-        print("Face confirmed on", matched_src, "-> cosine", round(sim, 4), "(" + verdict + ")")
+        same = sim >= 0.363
+        tag = verdict(same, "SAME PERSON", "uncertain")
+        print("Face confirmed on", matched_src, "-> cosine", round(sim, 4), "(" + tag + ")")
     print()
-    print(">> Link chosen to store on the blockchain:")
-    print("   " + str(chosen.get("link")))
+    print(paint(">> Link chosen to store on the blockchain:", "1;93"))
+    print("   " + link(chosen.get("link")))
     print("   source: " + str(chosen.get("source")) + "  |  " + str(chosen.get("title")))
     print()
     return chosen
 
 def step2(chosen):
     line()
-    print("STEP 2   BLOCKCHAIN SAVING IN PROCESS")
+    print(paint("STEP 2   BLOCKCHAIN SAVING IN PROCESS", "1;96"))
     line()
     receipt = upload_hash.upload(chosen)
     onchain = chain.read_memo(receipt["id"])
@@ -86,25 +98,25 @@ def step2(chosen):
     print("Backend            :", receipt["backend"], "(" + receipt["network"] + ")")
     print("Contract / program :", prog)
     print("Wallet             :", receipt.get("wallet"))
-    print("Transaction id     :", receipt["id"])
+    print("Transaction id     :", paint(receipt["id"], "93"))
     print("Block / slot       :", receipt.get("block"))
-    print("Stored link        :", chosen.get("link"))
-    print("On-chain hash      :", onchain)
-    print("Recomputed hash    :", recomputed)
-    print("On-chain hash true :", "TRUE" if match else "FALSE")
-    print("Explorer           :", receipt["explorer"])
+    print("Stored link        :", link(chosen.get("link")))
+    print("On-chain hash      :", paint(onchain, "95"))
+    print("Recomputed hash    :", paint(recomputed, "95"))
+    print("On-chain hash true :", verdict(match, "TRUE", "FALSE"))
+    print("Explorer           :", link(receipt["explorer"]))
     print()
     line()
     if match:
-        print("RESULT: VERIFIED  -  data matches the tamper-evident on-chain record.")
+        print(verdict(True, "RESULT: VERIFIED  -  data matches the tamper-evident on-chain record.", ""))
     else:
-        print("RESULT: MISMATCH  -  data does not match the on-chain record.")
+        print(verdict(False, "", "RESULT: MISMATCH  -  data does not match the on-chain record."))
     line()
     return receipt
 
 def step3(receipt):
     line()
-    print("STEP 3   TAMPER CHECK (is the on-chain record really tamper-evident?)")
+    print(paint("STEP 3   TAMPER CHECK (is the on-chain record really tamper-evident?)", "1;96"))
     line()
     print("Re-reading the record from the chain, then altering the local copy")
     print("the way an attacker would, and re-hashing it ...")
@@ -113,22 +125,22 @@ def step3(receipt):
     recomputed = hashlib.sha256(tampered.encode()).hexdigest()
     match = onchain == recomputed
     print()
-    print("On-chain hash          :", onchain)
-    print("Hash of TAMPERED record:", recomputed)
-    print("Hashes match           :", "TRUE" if match else "FALSE")
+    print("On-chain hash          :", paint(onchain, "95"))
+    print("Hash of TAMPERED record:", paint(recomputed, "95"))
+    print("Hashes match           :", verdict(match, "TRUE", "FALSE"))
     print()
     line()
     if match:
-        print("RESULT: UNEXPECTED  -  tampered data matched (this should never happen).")
+        print(verdict(True, "RESULT: UNEXPECTED  -  tampered data matched (this should never happen).", ""))
     else:
-        print("RESULT: TAMPER DETECTED  -  altered data does NOT match the on-chain record.")
+        print(paint("RESULT: TAMPER DETECTED  -  altered data does NOT match the on-chain record.", "1;92"))
     line()
 
 def main():
     line()
-    print("             WELCOME TO HHGOA TASK3")
+    print(paint("             WELCOME TO HHGOA TASK3", "1;95"))
     line()
-    print("Face Identification -> Web/Social Search -> Blockchain Verification")
+    print(paint("Face Identification -> Web/Social Search -> Blockchain Verification", "1;97"))
     backend = os.getenv("CHAIN", "solana").lower()
     if backend == "local":
         print("Chain backend: local simulated chain (offline)")
