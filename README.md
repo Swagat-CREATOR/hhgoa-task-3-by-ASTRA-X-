@@ -23,7 +23,11 @@ face image  ──▶  detect + encode face   (OpenCV YuNet + SFace, 128-d embed
 - **Primary: Solana devnet** via the **SPL Memo program** (`MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr`). The SHA-256 of the post is stored in a memo instruction; the transaction signature is the receipt, viewable on Solana Explorer. Built with `solders` over raw JSON-RPC (no wrapper lock-in).
 - **Fallback: local simulated chain** (`CHAIN=local`) — an append-only, hash-linked ledger (`out/localchain.json`) where each block commits to the previous block's hash. Fully offline, no funding, and tamper-evident by the same re-verification. Handy when the public devnet faucet is rate-limited.
 
-> **Validation status.** The Solana **read + re-verify** path is proven against live devnet memo transactions. Writing a *new* memo needs a funded wallet; when the public faucet is throttled, `CHAIN=local` runs the identical hash → write → re-verify → tamper-detect flow with zero external dependencies.
+> **Live proof (Solana devnet).** A real memo transaction anchoring the SHA-256 of a discovered Instagram post:
+> [`2yfT3S4YfUSbBVk1ezjapM2RipL9U9gh87aJCxPZdh58vwPFioaCNia3L1Bs6UwnAYRPFNJ4QvRRs9ZeTmPux2QK`](https://explorer.solana.com/tx/2yfT3S4YfUSbBVk1ezjapM2RipL9U9gh87aJCxPZdh58vwPFioaCNia3L1Bs6UwnAYRPFNJ4QvRRs9ZeTmPux2QK?cluster=devnet)
+> — open it on Solana Explorer to see the on-chain memo hash `fa860da9…58c6`. `verify_hash.py` reads it back and re-hashes to `VERIFIED`; `--tamper` flips it to `MISMATCH`.
+>
+> When the public faucet is throttled and no wallet funding is available, `CHAIN=local` runs the identical hash → write → re-verify → tamper-detect flow with zero external dependencies.
 
 ## Setup
 
