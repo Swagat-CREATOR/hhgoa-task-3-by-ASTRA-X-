@@ -276,6 +276,6 @@ Biometrics and a permanent public ledger are a dangerous mix if you're careless.
 
 ## Thank you 💛
 
-A genuine thank-you to the **HHGoa** team for setting this task. It's a rare hackathon brief that pushes you across three worlds at once — computer vision, real-world web search, and blockchain — and makes them meet in something you can actually run and verify end to end. We learned a lot building it, and we had fun doing it.
+THANK YOU HHGOA FOR THIS FUN PROJECT 💛
 
-**#HHGoa2026 · #RAGInGoa · Task 3 — Face Identification & Blockchain Verification**
+WITH REGARDS TEAM ASTRA-X
