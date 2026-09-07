@@ -3,6 +3,7 @@ import re
 import sys
 import json
 import html
+import time
 import requests
 from dotenv import load_dotenv
 
@@ -47,16 +48,22 @@ def upload_image(path):
                           files={"fileToUpload": (name, data)}, timeout=40)
         return r.text.strip()
 
-    for kind, fn in [("uguu", uguu), ("tmpfiles", tmpfiles), ("catbox", catbox)]:
-        try:
-            link = fn()
-            if link.startswith("http") and _serves_image(link):
-                print("Hosted query image at:", link, "(" + kind + ")")
-                return link
-            print("Host", kind, "did not serve a valid image, trying next.")
-        except Exception as e:
-            print("Upload via", kind, "failed:", e)
-    raise SystemExit("Could not host the query image on any provider.")
+    hosts = [("uguu", uguu), ("tmpfiles", tmpfiles), ("catbox", catbox)]
+    for attempt in range(1, 4):
+        for kind, fn in hosts:
+            try:
+                link = fn()
+                if link.startswith("http") and _serves_image(link):
+                    print("Hosted query image at:", link, "(" + kind + ")")
+                    return link
+                print("Host", kind, "did not serve a valid image, trying next.")
+            except Exception as e:
+                print("Upload via", kind, "failed:", e)
+        if attempt < 3:
+            wait = attempt * 3
+            print("All hosts failed (attempt " + str(attempt) + "); retrying in " + str(wait) + "s...")
+            time.sleep(wait)
+    raise SystemExit("Could not host the query image on any provider after retries.")
 
 def is_social(u):
     u = (u or "").lower()
@@ -126,6 +133,21 @@ def merge(*groups):
                 out.append(r)
     return out
 
+def platform_of(r):
+    blob = ((r.get("link") or "") + " " + (r.get("source") or "")).lower()
+    for s in SOCIAL:
+        if s in blob:
+            return s
+    return None
+
+def group_social(results):
+    groups = {}
+    for r in results:
+        p = platform_of(r)
+        if p:
+            groups.setdefault(p, []).append(r)
+    return groups
+
 def run(image_path):
     key = os.getenv("SERPAPI_KEY", "").strip()
     image_url = upload_image(image_path)
@@ -135,12 +157,17 @@ def run(image_path):
     engine = "+".join([e for e, g in [("serpapi", serp), ("yandex", yand)] if g]) or "none"
     print("Search engines:", engine, "| serpapi:", len(serp), "| yandex:", len(yand))
     socials = [r for r in results if social_rank(r) < len(SOCIAL)]
-    print("Social matches:", len(socials))
+    groups = group_social(results)
+    print("Social matches:", len(socials), "across", len(groups), "platforms")
+    for p in sorted(groups, key=lambda x: SOCIAL.index(x)):
+        items = groups[p]
+        print("  -", p, "(" + str(len(items)) + "):", (items[0].get("link") or "")[:72])
     post = {
         "engine": engine,
         "query_image_url": image_url,
         "match_count": len(results),
         "social_count": len(socials),
+        "platforms": {p: [r.get("link") for r in groups[p]] for p in groups},
         "matches": results[:40],
         "chosen": choose(results),
     }
