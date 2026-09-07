@@ -70,3 +70,12 @@ def encode_path(path):
         "embed_file": embed_path,
     }
 
+if __name__ == "__main__":
+    path = sys.argv[1] if len(sys.argv) > 1 else os.path.join("faces", "sample.jpg")
+    r = encode_path(path)
+    print("Faces detected:", r["faces"])
+    print("Primary face box [x,y,w,h]:", r["box"])
+    print("Detection score:", round(r["score"], 4))
+    print("Embedding dims:", r["embedding"].shape[1])
+    print("Saved crop:", r["crop"])
+    print("Saved embedding:", r["embed_file"])
