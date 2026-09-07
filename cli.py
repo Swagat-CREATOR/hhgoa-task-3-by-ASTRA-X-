@@ -100,6 +100,29 @@ def step2(chosen):
     else:
         print("RESULT: MISMATCH  -  data does not match the on-chain record.")
     line()
+    return receipt
+
+def step3(receipt):
+    line()
+    print("STEP 3   TAMPER CHECK (is the on-chain record really tamper-evident?)")
+    line()
+    print("Re-reading the record from the chain, then altering the local copy")
+    print("the way an attacker would, and re-hashing it ...")
+    onchain = chain.read_memo(receipt["id"])
+    tampered = receipt["record"] + "TAMPERED"
+    recomputed = hashlib.sha256(tampered.encode()).hexdigest()
+    match = onchain == recomputed
+    print()
+    print("On-chain hash          :", onchain)
+    print("Hash of TAMPERED record:", recomputed)
+    print("Hashes match           :", "TRUE" if match else "FALSE")
+    print()
+    line()
+    if match:
+        print("RESULT: UNEXPECTED  -  tampered data matched (this should never happen).")
+    else:
+        print("RESULT: TAMPER DETECTED  -  altered data does NOT match the on-chain record.")
+    line()
 
 def main():
     line()
@@ -116,7 +139,8 @@ def main():
     print("Using image:", path)
     print()
     chosen = step1(path)
-    step2(chosen)
+    receipt = step2(chosen)
+    step3(receipt)
 
 if __name__ == "__main__":
     main()
