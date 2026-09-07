@@ -135,6 +135,18 @@ Want a demo with **zero network and zero funding**? Force the offline chain:
 CHAIN=local .venv/Scripts/python cli.py
 ```
 
+In Windows PowerShell, set the environment variable separately:
+
+```powershell
+$env:CHAIN = "local"
+& .\.venv\Scripts\python.exe .\cli.py
+```
+
+> **Demo video note:** In the demo video, I accidentally ran the wrong command—my apologies! The correct PowerShell command is shown above. We decided to keep the original moment in the video because we wanted the demo to remain raw and authentic; my surprise was genuine. Thank you for your understanding!
+
+The `CHAIN=local command` form above is for Bash shells; PowerShell interprets
+it as a command named `CHAIN=local` and reports `CommandNotFoundException`.
+
 ---
 
 ## How to run it in the CLI
