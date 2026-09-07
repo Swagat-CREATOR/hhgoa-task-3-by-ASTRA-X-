@@ -10,6 +10,24 @@
 
 ---
 
+## Contents
+
+- [What this does in one breath](#what-this-does-in-one-breath)
+- [Watch the demo](#watch-the-demo)
+- [Architecture](#architecture)
+- [What is reverse image search + on-chain verification?](#what-is-reverse-image-search--on-chain-verification)
+- [Quickstart](#quickstart) — [clone](#1-clone-the-project) · [install](#2-install) · [search key](#3-add-a-search-key-recommended) · [run](#4-run-the-cli)
+- [How to run it in the CLI](#how-to-run-it-in-the-cli)
+- [Why SHA-256](#why-sha-256)
+- [Why Solana, and not anything else](#why-solana-and-not-anything-else)
+- [How to set up Solana for this project](#how-to-set-up-solana-for-this-project)
+- [Privacy — what we deliberately did *not* do](#privacy--what-we-deliberately-did-not-do)
+- [What we are *not* claiming (limitations)](#what-we-are-not-claiming-limitations)
+- [File map](#file-map)
+- [Thank you 💛](#thank-you-)
+
+---
+
 ## What this does in one breath
 
 You give it a face. It detects the face, turns it into a 128-number biometric signature, and runs a **genuine reverse image search across Google Lens and Yandex at once**. It lists **every social platform the face was found on** (Instagram, X, Facebook, LinkedIn, TikTok, YouTube …), confirms the top hit is really the *same person* by re-encoding that image and comparing signatures, then takes a **SHA-256 fingerprint** of the discovery and writes it to a **public blockchain**. Finally it reads the fingerprint back off-chain, re-hashes, and proves the record is untouched — and shows you that even a one-character change is instantly caught.
