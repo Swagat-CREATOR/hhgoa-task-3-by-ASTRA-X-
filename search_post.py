@@ -148,20 +148,21 @@ def group_social(results):
             groups.setdefault(p, []).append(r)
     return groups
 
-def run(image_path):
+def run(image_path, quiet=False):
     key = os.getenv("SERPAPI_KEY", "").strip()
     image_url = upload_image(image_path)
     serp = search_serpapi(image_url, key) if key else []
     yand = search_yandex(image_url)
     results = merge(serp, yand)
     engine = "+".join([e for e, g in [("serpapi", serp), ("yandex", yand)] if g]) or "none"
-    print("Search engines:", engine, "| serpapi:", len(serp), "| yandex:", len(yand))
     socials = [r for r in results if social_rank(r) < len(SOCIAL)]
     groups = group_social(results)
-    print("Social matches:", len(socials), "across", len(groups), "platforms")
-    for p in sorted(groups, key=lambda x: SOCIAL.index(x)):
-        items = groups[p]
-        print("  -", p, "(" + str(len(items)) + "):", (items[0].get("link") or "")[:72])
+    if not quiet:
+        print("Search engines:", engine, "| serpapi:", len(serp), "| yandex:", len(yand))
+        print("Social matches:", len(socials), "across", len(groups), "platforms")
+        for p in sorted(groups, key=lambda x: SOCIAL.index(x)):
+            items = groups[p]
+            print("  -", p, "(" + str(len(items)) + "):", (items[0].get("link") or "")[:72])
     post = {
         "engine": engine,
         "query_image_url": image_url,

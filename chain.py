@@ -91,18 +91,32 @@ def _solana_submit(text):
                 continue
             raise
         if _confirm(sig):
+            slot = None
+            try:
+                info = _rpc("getTransaction", [sig, {"encoding": "json", "maxSupportedTransactionVersion": 0, "commitment": "confirmed"}])
+                if info:
+                    slot = info.get("slot")
+            except Exception:
+                pass
             return {
                 "backend": "solana",
                 "network": CLUSTER,
                 "id": sig,
                 "wallet": str(payer.pubkey()),
+                "program": MEMO_PROGRAM,
+                "block": slot,
                 "explorer": "https://explorer.solana.com/tx/" + sig + "?cluster=" + CLUSTER,
             }
         print("Transaction not confirmed in time, retrying (attempt " + str(attempt) + ")...")
     raise SystemExit("Solana submit failed after retries: " + str(last_err))
 
 def _solana_read(record_id):
-    tx = _rpc("getTransaction", [record_id, {"encoding": "json", "maxSupportedTransactionVersion": 0, "commitment": "confirmed"}])
+    tx = None
+    for _ in range(10):
+        tx = _rpc("getTransaction", [record_id, {"encoding": "json", "maxSupportedTransactionVersion": 0, "commitment": "confirmed"}])
+        if tx is not None:
+            break
+        time.sleep(2)
     if tx is None:
         raise SystemExit("Transaction not found on-chain yet.")
     logs = (tx.get("meta") or {}).get("logMessages") or []
@@ -124,7 +138,8 @@ def _local_submit(text):
     block["block_hash"] = _block_hash(index, text, prev)
     ledger.append(block)
     json.dump(ledger, open(LEDGER, "w"), indent=2)
-    return {"backend": "local", "network": "local", "id": str(index), "wallet": "local", "explorer": LEDGER}
+    return {"backend": "local", "network": "local", "id": str(index), "wallet": "local",
+            "program": "local hash-linked ledger", "block": index, "explorer": LEDGER}
 
 def _local_read(record_id):
     if not os.path.exists(LEDGER):

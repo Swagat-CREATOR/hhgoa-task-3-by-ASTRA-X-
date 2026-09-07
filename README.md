@@ -43,7 +43,15 @@ Add a free SerpAPI key (recommended for reliable search — serpapi.com):
 SERPAPI_KEY=your_key_here
 ```
 
-## Run the full pipeline
+## Run the interactive CLI (recommended)
+
+```bash
+.venv/Scripts/python cli.py
+```
+
+It prints `WELCOME TO HHGOA TASK3`, asks for an image (a path, or just a filename it will look up in `faces/` and your Downloads folder), then runs **Step 1 — reverse image search** (listing every social platform the face was found on and the link it will anchor) and **Step 2 — blockchain saving** (printing the program address, transaction id, block/slot, on-chain hash, and whether it re-verifies `TRUE`). Set `CHAIN=local` first for the offline demo.
+
+## Run the full pipeline (non-interactive)
 
 ```bash
 .venv/Scripts/python pipeline.py faces/sample.jpg
@@ -73,6 +81,7 @@ A wallet is generated at `wallet.json` on first run and reused. The public devne
 
 | File | Role |
 |------|------|
+| `cli.py` | Interactive CLI: welcome → ask for image → search → blockchain, with full on-chain detail |
 | `pipeline.py` | Orchestrates all four stages end to end |
 | `face_encode.py` | YuNet detection + SFace 128-d encoding |
 | `search_post.py` | Reverse image search (SerpAPI / Yandex) |
